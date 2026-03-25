@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-CONFIG="/etc/jaws-audit.conf"
+CONFIG="/etc/jaws.conf"
 LOG_DIR="/var/log/audits"
 HOSTNAME=$(hostname)
 DATE=$(date '+%Y-%m-%d %H:%M')
