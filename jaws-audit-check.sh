@@ -42,15 +42,15 @@ if [ -f /var/run/reboot-required ]; then
 fi
 
 # ─── Comprobación 2: Paquetes de seguridad sin instalar ─────────────────────
-SEC_PKGS=$(apt list --upgradable 2>/dev/null | grep -i security | wc -l)
+SEC_PKGS=$(apt list --upgradable 2>/dev/null | grep -i security | wc -l || true)
 if [ "$SEC_PKGS" -gt 0 ]; then
     ISSUES+=("⚠️ ${SEC_PKGS} paquetes de seguridad sin instalar")
 fi
 
 # ─── Comprobación 3: Servicios caídos ───────────────────────────────────────
-FAILED_SERVICES=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l)
+FAILED_SERVICES=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | wc -l || true)
 if [ "$FAILED_SERVICES" -gt 0 ]; then
-    FAILED_NAMES=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | awk '{print $1}' | tr '\n' ' ')
+    FAILED_NAMES=$(systemctl list-units --type=service --state=failed --no-legend 2>/dev/null | awk '{print $2}' | tr '\n' ' ' || true)
     ISSUES+=("❌ ${FAILED_SERVICES} servicios caídos: ${FAILED_NAMES}")
 fi
 
@@ -58,10 +58,10 @@ fi
 while IFS= read -r line; do
     USAGE=$(echo "$line" | awk '{print $5}' | tr -d '%')
     MOUNT=$(echo "$line" | awk '{print $6}')
-    if [ "$USAGE" -ge 80 ]; then
+    if [[ "$USAGE" =~ ^[0-9]+$ ]] && [ "$USAGE" -ge 80 ]; then
         ISSUES+=("💾 Disco ${MOUNT} al ${USAGE}%")
     fi
-done < <(df -h | grep -v tmpfs | grep -v "Use%" | awk '{print $0}')
+done < <(df -h | grep -v tmpfs | grep -v "Use%" | tail -n +2 || true)
 
 # ─── Comprobación 5: Intentos SSH fallidos (últimos 7 días) ─────────────────
 SSH_FAILS=$(journalctl _SYSTEMD_UNIT=sshd.service --since "7 days ago" --no-pager 2>/dev/null \
